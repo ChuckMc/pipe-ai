@@ -1,5 +1,5 @@
 {
-  "name": "pipe-ai",
+  "name": "pipeai-cli",
   "version": "0.1.0",
   "description": "终端输出 → AI 分析。一个管道命令，问任何问题。Pipe any command to AI, ask anything.",
   "keywords": [
@@ -16,7 +16,7 @@
     "日志分析",
     "终端工具",
     "命令行",
-    "pipe-ai"
+    "pipeai-cli"
   ],
   "homepage": "https://github.com/ChuckMc/pipe-ai#readme",
   "repository": {
