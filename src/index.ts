@@ -3,7 +3,7 @@
 import { analyzeWithAI } from "./ai/client.js";
 import { parseArgs, printHelp } from "./cli/flags.js";
 import { startWatching } from "./stream/watcher.js";
-import { stdin as input, stdout } from "node:process";
+import { stdin as input } from "node:process";
 
 function readStdin(): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -35,15 +35,19 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const aiOptions = {
+    model: options.model,
+    maxTokens: options.maxTokens,
+    apiKey: options.apiKey,
+    baseUrl: options.apiUrl,
+  };
+
   if (options.watch) {
     console.error("pipe: watching stdin... (Ctrl+C to stop)\n");
     await startWatching(input, {
       onData: async (chunk) => {
         console.error(`\npipe: analyzing ${chunk.length} chars...\n`);
-        await analyzeWithAI(chunk, options.query, {
-          model: options.model,
-          maxTokens: options.maxTokens,
-        });
+        await analyzeWithAI(chunk, options.query, aiOptions);
         console.error("\n---\n");
       },
       onError: (err) => {
@@ -58,10 +62,7 @@ async function main(): Promise<void> {
     return readStdin();
   })();
 
-  await analyzeWithAI(stdinContent, options.query, {
-    model: options.model,
-    maxTokens: options.maxTokens,
-  });
+  await analyzeWithAI(stdinContent, options.query, aiOptions);
 }
 
 main().catch((err) => {

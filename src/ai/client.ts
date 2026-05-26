@@ -1,38 +1,40 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { Writable } from "node:stream";
 
 const ANTHROPIC_API_KEY_ENV = "ANTHROPIC_API_KEY";
+const ANTHROPIC_BASE_URL_ENV = "ANTHROPIC_BASE_URL";
+const DEFAULT_BASE_URL = "https://api.anthropic.com";
 
 export interface AIOptions {
   model?: string;
   maxTokens?: number;
   signal?: AbortSignal;
+  apiKey?: string;
+  baseUrl?: string;
 }
 
 const DEFAULT_MODEL = "claude-sonnet-4-6-20250514";
 const DEFAULT_MAX_TOKENS = 4096;
 
-/**
- * Send stdin content + user query to Claude, stream the response to the
- * given writable stream (typically process.stdout), and return the full text.
- */
 export async function analyzeWithAI(
   stdinContent: string,
   userQuery: string,
   options: AIOptions = {},
   out: Writable = process.stdout
 ): Promise<string> {
-  const apiKey = process.env[ANTHROPIC_API_KEY_ENV];
+  const apiKey = options.apiKey || process.env[ANTHROPIC_API_KEY_ENV];
+  const baseUrl = options.baseUrl || process.env[ANTHROPIC_BASE_URL_ENV] || DEFAULT_BASE_URL;
+
   if (!apiKey) {
     out.write(
-      `Error: ${ANTHROPIC_API_KEY_ENV} is not set.\n` +
-      "Set it with: export ANTHROPIC_API_KEY=your-key-here\n" +
-      "Get a key at: https://console.anthropic.com/\n"
+      `Error: No API key provided.\n\n` +
+      `Set via:\n` +
+      `  1. Flag:  --api-key sk-ant-...\n` +
+      `  2. Env:   export ${ANTHROPIC_API_KEY_ENV}=sk-ant-...\n` +
+      `  3. URL:   --api-url https://key:your-key@host.com\n\n` +
+      `Get a key at: https://console.anthropic.com/\n`
     );
     process.exit(1);
   }
-
-  const anthropic = new Anthropic({ apiKey });
 
   const systemPrompt =
     "You are a terminal assistant. The user has piped command output to you " +
@@ -51,26 +53,87 @@ export async function analyzeWithAI(
       ]
     : [{ type: "text" as const, text: userQuery }];
 
-  const stream = anthropic.messages.stream(
-    {
-      model: options.model || DEFAULT_MODEL,
-      max_tokens: options.maxTokens || DEFAULT_MAX_TOKENS,
-      system: systemPrompt,
-      messages: [{ role: "user", content: messageContent }],
+  const body = JSON.stringify({
+    model: options.model || DEFAULT_MODEL,
+    max_tokens: options.maxTokens || DEFAULT_MAX_TOKENS,
+    system: systemPrompt,
+    messages: [{ role: "user", content: messageContent }],
+    stream: true,
+  });
+
+  const parsedUrl = parseApiUrl(baseUrl, apiKey);
+  const response = await fetch(parsedUrl + "/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": parsedUrl.key,
+      "anthropic-version": "2023-06-01",
     },
-    { signal: options.signal }
-  );
+    body,
+    signal: options.signal,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    out.write(`Error: API returned ${response.status}\n${text}\n`);
+    process.exit(1);
+  }
 
   const chunks: string[] = [];
 
-  for await (const event of stream) {
-    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-      out.write(event.delta.text);
-      chunks.push(event.delta.text);
+  if (response.body) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith("data: ")) continue;
+        const data = trimmed.slice(6);
+        if (data === "[DONE]") break;
+
+        try {
+          const event = JSON.parse(data);
+          if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
+            out.write(event.delta.text);
+            chunks.push(event.delta.text);
+          }
+        } catch {
+          // skip non-JSON lines
+        }
+      }
     }
   }
 
   out.write("\n");
-
   return chunks.join("");
+}
+
+interface ParsedApiUrl {
+  url: string;
+  key: string;
+}
+
+function parseApiUrl(rawUrl: string, rawKey: string): ParsedApiUrl {
+  const APEX_PATTERN = /^https?:\/\/([^:]+):(.+?)@(.+)$/;
+
+  const match = rawUrl.match(APEX_PATTERN);
+  if (match) {
+    return { url: `https://${match[3]}`, key: match[2] };
+  }
+
+  const keyMatch = rawKey.match(APEX_PATTERN);
+  if (keyMatch) {
+    return { url: keyMatch[1] === "https" ? `https://${keyMatch[3]}` : `http://${keyMatch[3]}`, key: keyMatch[2] };
+  }
+
+  return { url: rawUrl.replace(/\/+$/, ""), key: rawKey };
 }

@@ -11,6 +11,10 @@ export interface PipeOptions {
   model?: string;
   /** Max tokens for response */
   maxTokens: number;
+  /** API key */
+  apiKey?: string;
+  /** API base URL (supports embedded key: https://key:sk-ant-...@host.com) */
+  apiUrl?: string;
   /** Show help */
   help: boolean;
 }
@@ -24,20 +28,31 @@ USAGE / 用法:
   tail -f log | pipe --watch "analyze errors"
 
 OPTIONS / 选项:
-  --watch, -w       Continuously analyze stdin as new data arrives
-                    持续监听 stdin，实时分析新增内容
-  --model, -m       Claude model to use (default: claude-sonnet-4-6-20250514)
-                    指定 Claude 模型
-  --max-tokens      Max response tokens (default: 4096)
-  --help, -h        Show this help / 显示帮助
+  --watch, -w         Continuously analyze stdin as new data arrives
+                      持续监听 stdin，实时分析新增内容
+  --model, -m         Claude model to use (default: claude-sonnet-4-6-20250514)
+                      指定 Claude 模型
+  --max-tokens        Max response tokens (default: 4096)
+  --api-key           API key (or set ANTHROPIC_API_KEY env var)
+  --api-url           API base URL with embedded key
+                      URL 格式内嵌 API Key，例如:
+                      https://key:sk-ant-xxx@api.anthropic.com
+                      https://key:sk-ant-xxx@api.example.com/v1
+  --help, -h          Show this help / 显示帮助
 
 EXAMPLES / 示例:
-  cat build.log | pipe "Why did the build fail?"
+  # 环境变量
+  export ANTHROPIC_API_KEY=sk-ant-...
   cat build.log | pipe "构建为什么失败了？"
-  kubectl get pods | pipe "Any pods in CrashLoopBackOff?"
-  dmesg | pipe "Summarize hardware errors"
-  tail -f server.log | pipe --watch "Alert me on ERROR or WARNING"
-  tail -f server.log | pipe -w "报告 ERROR 和慢查询"
+
+  # 直接传 key
+  cat build.log | pipe --api-key sk-ant-... "有什么问题？"
+
+  # URL 内嵌 key（支持任意兼容 API）
+  cat build.log | pipe --api-url https://key:sk-ant-xxx@api.anthropic.com "分析一下"
+
+  # 实时监控
+  tail -f server.log | pipe -w "发现 ERROR 立刻报告"
 `;
 
 export function parseArgs(args: string[]): PipeOptions {
@@ -74,6 +89,22 @@ export function parseArgs(args: string[]): PipeOptions {
         result.maxTokens = parseInt(val, 10);
         if (isNaN(result.maxTokens) || result.maxTokens < 1) {
           console.error("Error: --max-tokens must be a positive number");
+          process.exit(1);
+        }
+        break;
+      }
+      case "--api-key": {
+        result.apiKey = args[++i];
+        if (!result.apiKey) {
+          console.error("Error: --api-key requires a value");
+          process.exit(1);
+        }
+        break;
+      }
+      case "--api-url": {
+        result.apiUrl = args[++i];
+        if (!result.apiUrl) {
+          console.error("Error: --api-url requires a value");
           process.exit(1);
         }
         break;

@@ -59,10 +59,19 @@ pipe 让你**全程不离开终端**，一行命令把任何输出丢给 AI，�
 
 ```bash
 # 1. 安装
-npm install -g pipe-cli
+npm install -g pipeai-cli
 
-# 2. 设置 API 密钥（加入到 ~/.zshrc 永久生效）
+# 2. 设置 API（任选一种方式）
+
+## 方式一：环境变量（推荐）
 export ANTHROPIC_API_KEY=sk-ant-...
+export ANTHROPIC_BASE_URL=https://api.anthropic.com
+
+## 方式二：URL 内嵌 Key（一行搞定）
+cat build.log | pipe --api-url https://key:sk-ant-xxx@api.anthropic.com "构建为什么失败了？"
+
+## 方式三：直接传 key
+cat build.log | pipe --api-key sk-ant-... "有什么问题？"
 
 # 3. 开用
 cat build.log | pipe "为什么构建失败了？有什么修复建议？"
@@ -126,6 +135,8 @@ psql -c "EXPLAIN ANALYZE SELECT ..." | pipe "这个查询慢在哪？索引怎�
 | `-w`, `--watch` | 持续监听 stdin，新数据自动分析 |
 | `-m`, `--model` | 指定 Claude 模型 |
 | `--max-tokens` | 最大回复长度 |
+| `--api-key` | API 密钥 |
+| `--api-url` | API 地址，支持内嵌 key：`https://key:sk-ant-xxx@host.com` |
 | `-h`, `--help`  | 显示帮助 |
 
 ---
