@@ -1,7 +1,7 @@
 {
-  "name": "pipe-cli",
+  "name": "pipe-ai",
   "version": "0.1.0",
-  "description": "Pipe terminal output to AI — ask questions about any command output | 终端输出 → AI 分析，用自然语言问问题",
+  "description": "终端输出 → AI 分析。一个管道命令，问任何问题。Pipe any command to AI, ask anything.",
   "keywords": [
     "cli",
     "ai",
@@ -15,15 +15,16 @@
     "实时分析",
     "日志分析",
     "终端工具",
-    "命令行"
+    "命令行",
+    "pipe-ai"
   ],
-  "homepage": "https://github.com/ChuckMc/pipe#readme",
+  "homepage": "https://github.com/ChuckMc/pipe-ai#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ChuckMc/pipe.git"
+    "url": "git+https://github.com/ChuckMc/pipe-ai.git"
   },
   "bugs": {
-    "url": "https://github.com/ChuckMc/pipe/issues"
+    "url": "https://github.com/ChuckMc/pipe-ai/issues"
   },
   "type": "module",
   "bin": {

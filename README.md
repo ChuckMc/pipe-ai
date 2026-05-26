@@ -20,7 +20,7 @@
 
 <!-- DREAMFIELD_README_HEADER_END -->
 
-<h1 align="center">pipe</h1>
+<h1 align="center">pipe-ai</h1>
 
 <p align="center">
   <strong>终端输出 → AI 分析。一个管道命令，问任何问题。</strong>
@@ -29,7 +29,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ChuckMc/pipe/releases"><img src="https://img.shields.io/github/v/release/ChuckMc/pipe" alt="GitHub Release"></a>
+  <a href="https://github.com/ChuckMc/pipe-ai/releases"><img src="https://img.shields.io/github/v/release/ChuckMc/pipe-ai" alt="GitHub Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"></a>
 </p>
 
