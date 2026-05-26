@@ -21,8 +21,14 @@ export async function analyzeWithAI(
   options: AIOptions = {},
   out: Writable = process.stdout
 ): Promise<string> {
-  const apiKey = options.apiKey || process.env[ANTHROPIC_API_KEY_ENV];
-  const baseUrl = options.baseUrl || process.env[ANTHROPIC_BASE_URL_ENV] || DEFAULT_BASE_URL;
+  let baseUrl = options.baseUrl || process.env[ANTHROPIC_BASE_URL_ENV] || DEFAULT_BASE_URL;
+  let apiKey = options.apiKey || process.env[ANTHROPIC_API_KEY_ENV] || "";
+
+  // Extract key from URL-embedded format: https://key:sk-ant-xxx@host.com
+  const embeddedKeyMatch = baseUrl.match(/^https?:\/\/[^:]+:(.+?)@.+$/);
+  if (embeddedKeyMatch && !apiKey) {
+    apiKey = embeddedKeyMatch[1];
+  }
 
   if (!apiKey) {
     out.write(
@@ -62,6 +68,11 @@ export async function analyzeWithAI(
   });
 
   const parsedUrl = parseApiUrl(baseUrl, apiKey);
+  if (parsedUrl.key !== apiKey) {
+    // Key was extracted from URL, not from options/env
+    apiKey = parsedUrl.key;
+  }
+
   const response = await fetch(parsedUrl.url + "/v1/messages", {
     method: "POST",
     headers: {
