@@ -62,7 +62,7 @@ export async function analyzeWithAI(
   });
 
   const parsedUrl = parseApiUrl(baseUrl, apiKey);
-  const response = await fetch(parsedUrl + "/v1/messages", {
+  const response = await fetch(parsedUrl.url + "/v1/messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
