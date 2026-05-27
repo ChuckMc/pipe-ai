@@ -31,7 +31,9 @@ async function resolveModel(
 
   // Try to discover models from the API
   try {
-    const modelsUrl = endpoint.replace(/\/messages\/?$/, "").replace(/\/+$/, "") + "/models";
+    // Try both /models and /v1/models
+    const base = endpoint.replace(/\/messages\/?$/, "").replace(/\/+$/, "");
+    const modelsUrl = base.includes("/v1") ? base + "/models" : base + "/v1/models";
     const res = await fetch(modelsUrl, {
       headers: {
         "Authorization": `Bearer ${apiKey}`,
@@ -75,6 +77,9 @@ export async function listModels(
   }
 
   let endpoint = url.replace(/\/+$/, "");
+  if (!endpoint.includes("api.anthropic.com") && !endpoint.endsWith("/v1") && !endpoint.endsWith("/messages")) {
+    endpoint += "/v1";
+  }
   if (!endpoint.endsWith("/messages")) {
     endpoint += "/messages";
   }
@@ -141,6 +146,10 @@ export async function analyzeWithAI(
 
   // Build final endpoint
   let endpoint = apiUrl.replace(/\/+$/, "");
+  // Ensure /v1 prefix for third-party APIs (Anthropic native uses api.anthropic.com directly)
+  if (!endpoint.includes("api.anthropic.com") && !endpoint.endsWith("/v1") && !endpoint.endsWith("/messages")) {
+    endpoint += "/v1";
+  }
   if (!endpoint.endsWith("/messages")) {
     endpoint += "/messages";
   }
