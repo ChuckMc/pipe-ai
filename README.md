@@ -62,7 +62,7 @@ cat log | pipe "why?"
 # 1. 安装
 npm install -g pipeai-cli
 
-# 2. 开用（三种方式任选）
+# 2. 开用
 ```
 
 ### 方式一：环境变量（推荐，永久生效）
@@ -87,7 +87,17 @@ cat build.log | pipe --api-url https://key:你的key@你的api地址/v1 "分析�
 cat build.log | pipe --api-key 你的key --api-url https://你的api地址/v1 "有什么问题？"
 ```
 
-> 支持任意兼容 Anthropic Messages API 的第三方地址。
+### 选择模型
+
+```bash
+# 查看 API 支持哪些模型
+pipe --list-models --api-key 你的key --api-url https://你的api地址/v1
+
+# 指定模型（不指定则自动选第一个可用模型）
+cat build.log | pipe -m DeepSeek-V4-Flash "有什么问题？"
+```
+
+> 支持任意兼容 Anthropic Messages API 的第三方地址。自动从 API `/models` 端点检测可用模型。
 
 ---
 
