@@ -70,6 +70,7 @@ npm install -g pipeai-cli
 ```bash
 export ANTHROPIC_API_KEY=你的key
 export ANTHROPIC_BASE_URL=https://你的api地址   # 可选，默认 Anthropic 官方
+export ANTHROPIC_MODEL=模型名                    # 可选，不设则自动检测
 cat build.log | pipe "为什么构建失败了？"
 ```
 
@@ -121,11 +122,19 @@ cat build.log | pipe -m DeepSeek-V4-Flash "有什么问题？"
 | 参数 | 说明 |
 |------|------|
 | `-w`, `--watch` | 持续监听 stdin，新数据自动分析 |
-| `-m`, `--model` | 指定模型名（默认 claude-sonnet-4-6-20250514） |
+| `-m`, `--model` | 指定模型名（默认自动检测） |
 | `--max-tokens` | 最大回复长度（默认 4096） |
 | `--api-url` | API 地址，支持内嵌 key：`https://key:xxx@host.com` |
 | `--api-key` | API 密钥 |
 | `-h`, `--help` | 显示帮助 |
+
+### 环境变量
+
+| 变量 | 说明 |
+|------|------|
+| `ANTHROPIC_API_KEY` | API 密钥 |
+| `ANTHROPIC_BASE_URL` | API 地址（默认 Anthropic 官方） |
+| `ANTHROPIC_MODEL` | 模型名（可选，不设则自动检测） |
 
 ---
 

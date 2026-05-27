@@ -32,9 +32,10 @@ USAGE / 用法:
 CONFIG / 配置:
   三种方式任选（支持自定义 API 地址和模型）:
 
-  方式一：环境变量
+  方式一：环境变量（推荐）
     export ANTHROPIC_API_KEY=你的key
     export ANTHROPIC_BASE_URL=https://你的api地址
+    export ANTHROPIC_MODEL=模型名              # 可选，不设则自动检测
     cat log | pipe "问题"
 
   方式二：URL 内嵌 key

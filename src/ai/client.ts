@@ -2,6 +2,7 @@ import { Writable } from "node:stream";
 
 const ANTHROPIC_API_KEY_ENV = "ANTHROPIC_API_KEY";
 const ANTHROPIC_BASE_URL_ENV = "ANTHROPIC_BASE_URL";
+const ANTHROPIC_MODEL_ENV = "ANTHROPIC_MODEL";
 const DEFAULT_BASE_URL = "https://api.anthropic.com";
 
 export interface AIOptions {
@@ -27,7 +28,10 @@ async function resolveModel(
   userModel: string | undefined,
   signal?: AbortSignal
 ): Promise<string> {
+  // Priority: --model flag > ANTHROPIC_MODEL env > auto-detect > default
   if (userModel) return userModel;
+  const envModel = process.env[ANTHROPIC_MODEL_ENV];
+  if (envModel) return envModel;
 
   // Try to discover models from the API
   try {
