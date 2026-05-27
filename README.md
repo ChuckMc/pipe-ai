@@ -20,18 +20,21 @@
 
 <!-- DREAMFIELD_README_HEADER_END -->
 
-<h1 align="center">pipe-ai</h1>
+<h1 align="center">pipe</h1>
 
 <p align="center">
-  <strong>终端输出 → AI 分析。一个管道命令，问任何问题。</strong>
-  <br>
-  Pipe any command output to Claude and ask questions right in your terminal.
+  <strong>终端输出 → AI 分析，一个管道命令问任何问题</strong><br>
+  <sub>Pipe any command output to AI and ask questions in natural language, right in your terminal.</sub>
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/pipeai-cli"><img src="https://img.shields.io/npm/v/pipeai-cli" alt="npm"></a>
   <a href="https://github.com/ChuckMc/pipe-ai/releases"><img src="https://img.shields.io/github/v/release/ChuckMc/pipe-ai" alt="GitHub Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen" alt="Node >= 18">
 </p>
+
+---
 
 ```bash
 cat build.log | pipe "构建为什么失败了？"
@@ -39,19 +42,17 @@ tail -f server.log | pipe -w "发现 ERROR 立刻报告"
 kubectl get pods -A | pipe "哪些 Pod 状态异常？"
 ```
 
----
-
 ## 为什么用 pipe？
 
-**遇到问题** — **打开浏览器** — **复制粘贴** — **等回复** — **切回终端**
+> 遇到问题 → 打开浏览器 → 复制粘贴 → 等回复 → 切回终端
 
 还是
 
 ```bash
-cat log | pipe "why？"
+cat log | pipe "why?"
 ```
 
-pipe 让你**全程不离开终端**，一行命令把任何输出丢给 AI，用自然语言问问题，实时流式回答。
+**一行命令，全程不离开终端。** 任何命令输出丢给 AI，自然语言问问题，实时流式回答。
 
 ---
 
@@ -61,93 +62,72 @@ pipe 让你**全程不离开终端**，一行命令把任何输出丢给 AI，�
 # 1. 安装
 npm install -g pipeai-cli
 
-# 2. 设置 API（任选一种方式）
-
-## 方式一：环境变量（推荐）
-export ANTHROPIC_API_KEY=sk-ant-...
-export ANTHROPIC_BASE_URL=https://api.anthropic.com
-
-## 方式二：URL 内嵌 Key（一行搞定）
-cat build.log | pipe --api-url https://key:sk-ant-xxx@api.anthropic.com "构建为什么失败了？"
-
-## 方式三：直接传 key
-cat build.log | pipe --api-key sk-ant-... "有什么问题？"
-
-# 3. 开用
-cat build.log | pipe "为什么构建失败了？有什么修复建议？"
+# 2. 开用（三种方式任选）
 ```
+
+### 方式一：环境变量（推荐，永久生效）
+
+```bash
+export ANTHROPIC_API_KEY=你的key
+export ANTHROPIC_BASE_URL=https://你的api地址   # 可选，默认 Anthropic 官方
+cat build.log | pipe "为什么构建失败了？"
+```
+
+> 建议加入 `~/.zshrc` 或 `~/.bashrc`。
+
+### 方式二：URL 内嵌 key（一行搞定）
+
+```bash
+cat build.log | pipe --api-url https://key:你的key@你的api地址/v1 "分析一下"
+```
+
+### 方式三：分别指定 URL 和 key
+
+```bash
+cat build.log | pipe --api-key 你的key --api-url https://你的api地址/v1 "有什么问题？"
+```
+
+> 支持任意兼容 Anthropic Messages API 的第三方地址。
 
 ---
 
 ## 使用示例
 
-### 调试构建失败
-
-```bash
-# 中文提问
-cat build.log | pipe "报错原因是什么？怎么修复？"
-
-# English
-cat build.log | pipe "What caused the error? How to fix?"
-```
-
-### 排查服务器异常
-
-```bash
-curl -s https://api.example.com/health | pipe "服务都正常吗？"
-dmesg | pipe "有硬件错误吗？"
-journalctl -u nginx --no-pager -p err | pipe "总结最近的错误"
-```
-
-### 日志实时监控
-
-```bash
-tail -f server.log  | pipe -w "只报告 ERROR 和 WARNING，忽略 INFO"
-tail -f access.log | pipe -w "发现 5xx 或慢请求时警报"
-tail -f app.log    | pipe -w "检测到 OOM 或内存泄漏迹象就告诉我"
-```
-
-### 代码审查
-
-```bash
-git diff main...HEAD | pipe "Review these changes, any bugs?"
-```
-
-### Kubernetes 运维
-
-```bash
-kubectl describe pod crash-pod | pipe "为什么这个 Pod 一直 CrashLoopBackOff？"
-kubectl get events --sort-by=.lastTimestamp | pipe "集群最近有什么异常？"
-```
-
-### 数据库
-
-```bash
-psql -c "EXPLAIN ANALYZE SELECT ..." | pipe "这个查询慢在哪？索引怎么优化？"
-```
+| 场景 | 命令 |
+|------|------|
+| 调试构建 | `cat build.log \| pipe "报错原因？怎么修复？"` |
+| 排查服务器 | `curl -s https://api.example.com/health \| pipe "服务正常吗？"` |
+| 日志实时监控 | `tail -f server.log \| pipe -w "只报告 ERROR 和 WARNING"` |
+| 代码审查 | `git diff main...HEAD \| pipe "Review these changes, any bugs?"` |
+| K8s 运维 | `kubectl describe pod crash-pod \| pipe "为什么 CrashLoopBackOff？"` |
+| 数据库 | `psql -c "EXPLAIN ANALYZE ..." \| pipe "这个查询慢在哪？"` |
+| 硬件诊断 | `dmesg \| pipe "有硬件错误吗？"` |
+| 安全审计 | `cat access.log \| awk '{print $1}' \| sort \| uniq -c \| sort -rn \| pipe "有可疑 IP 吗？"` |
 
 ---
 
 ## 选项
 
-| 参数 | 作用 |
+| 参数 | 说明 |
 |------|------|
 | `-w`, `--watch` | 持续监听 stdin，新数据自动分析 |
-| `-m`, `--model` | 指定 Claude 模型 |
-| `--max-tokens` | 最大回复长度 |
+| `-m`, `--model` | 指定模型名（默认 claude-sonnet-4-6-20250514） |
+| `--max-tokens` | 最大回复长度（默认 4096） |
+| `--api-url` | API 地址，支持内嵌 key：`https://key:xxx@host.com` |
 | `--api-key` | API 密钥 |
-| `--api-url` | API 地址，支持内嵌 key：`https://key:sk-ant-xxx@host.com` |
-| `-h`, `--help`  | 显示帮助 |
+| `-h`, `--help` | 显示帮助 |
 
 ---
 
 ## 工作原理
 
 ```
-你的命令 → stdout → pipe → Claude API → 流式回答 → 你的终端
+你的命令 → stdout → pipe → AI API → 流式回答 → 终端
 ```
 
-零配置、无守护进程、不需要 YAML。
+- 零配置、无守护进程、不需要 YAML
+- 自动检测用户语言，用中文问就中文答
+- 支持自定义 API 地址（第三方兼容服务、本地部署等）
 
 ---
 
