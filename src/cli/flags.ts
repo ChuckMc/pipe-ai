@@ -34,22 +34,22 @@ OPTIONS / 选项:
                       指定 Claude 模型
   --max-tokens        Max response tokens (default: 4096)
   --api-key           API key (or set ANTHROPIC_API_KEY env var)
-  --api-url           API base URL with embedded key
-                      URL 格式内嵌 API Key，例如:
-                      https://key:sk-ant-xxx@api.anthropic.com
-                      https://key:sk-ant-xxx@api.example.com/v1
+  --api-url           API base URL (or set ANTHROPIC_BASE_URL env var)
+                      Also supports embedded key:
+                      https://key:sk-ant-xxx@api.anthropic.com/v1
   --help, -h          Show this help / 显示帮助
 
 EXAMPLES / 示例:
-  # 环境变量
-  export ANTHROPIC_API_KEY=sk-ant-...
+  # 环境变量（推荐）
+  export ANTHROPIC_API_KEY=你的key
+  export ANTHROPIC_BASE_URL=https://你的api地址
   cat build.log | pipe "构建为什么失败了？"
 
-  # 直接传 key
-  cat build.log | pipe --api-key sk-ant-... "有什么问题？"
+  # URL 内嵌 key和地址（一行搞定）
+  cat build.log | pipe --api-url https://key:你的key@你的地址/v1 "分析一下"
 
-  # URL 内嵌 key（支持任意兼容 API）
-  cat build.log | pipe --api-url https://key:sk-ant-xxx@api.anthropic.com "分析一下"
+  # 分别指定 URL 和 key
+  cat build.log | pipe --api-key 你的key --api-url https://你的地址/v1 "有什么问题？"
 
   # 实时监控
   tail -f server.log | pipe -w "发现 ERROR 立刻报告"

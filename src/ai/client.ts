@@ -24,19 +24,20 @@ export async function analyzeWithAI(
   let baseUrl = options.baseUrl || process.env[ANTHROPIC_BASE_URL_ENV] || DEFAULT_BASE_URL;
   let apiKey = options.apiKey || process.env[ANTHROPIC_API_KEY_ENV] || "";
 
-  // Extract key from URL-embedded format: https://key:sk-ant-xxx@host.com
-  const embeddedKeyMatch = baseUrl.match(/^https?:\/\/[^:]+:(.+?)@.+$/);
-  if (embeddedKeyMatch && !apiKey) {
-    apiKey = embeddedKeyMatch[1];
+  // Parse URL — may contain embedded key: https://key:sk-ant-xxx@host.com
+  const parsed = parseApiUrl(baseUrl);
+  if (parsed.key && !apiKey) {
+    apiKey = parsed.key;
   }
+  const apiUrl = parsed.url;
 
   if (!apiKey) {
     out.write(
       `Error: No API key provided.\n\n` +
       `Set via:\n` +
-      `  1. Flag:  --api-key sk-ant-...\n` +
-      `  2. Env:   export ${ANTHROPIC_API_KEY_ENV}=sk-ant-...\n` +
-      `  3. URL:   --api-url https://key:your-key@host.com\n\n` +
+      `  1. Flag:  --api-key 你的key\n` +
+      `  2. Env:   export ${ANTHROPIC_API_KEY_ENV}=你的key\n` +
+      `  3. URL:   --api-url https://key:你的key@你的api地址\n\n` +
       `Get a key at: https://console.anthropic.com/\n`
     );
     process.exit(1);
@@ -67,17 +68,18 @@ export async function analyzeWithAI(
     stream: true,
   });
 
-  const parsedUrl = parseApiUrl(baseUrl, apiKey);
-  if (parsedUrl.key !== apiKey) {
-    // Key was extracted from URL, not from options/env
-    apiKey = parsedUrl.key;
+  // Build final endpoint: just append /messages to the user's URL
+  // User is responsible for providing the correct base path
+  let endpoint = apiUrl.replace(/\/+$/, "");
+  if (!endpoint.endsWith("/messages")) {
+    endpoint += "/messages";
   }
 
-  const response = await fetch(parsedUrl.url + "/v1/messages", {
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": parsedUrl.key,
+      "x-api-key": apiKey,
       "anthropic-version": "2023-06-01",
     },
     body,
@@ -128,23 +130,20 @@ export async function analyzeWithAI(
   return chunks.join("");
 }
 
-interface ParsedApiUrl {
-  url: string;
-  key: string;
-}
+/**
+ * Parse an API URL, extracting an embedded key if present.
+ * Format: https://key:your-key@your-host.com/path
+ * Also accepts: https://your-host.com/path (no embedded key)
+ */
+function parseApiUrl(rawUrl: string): { url: string; key: string } {
+  // Match: protocol://username:password@host
+  const EMBEDDED_KEY = /^(https?):\/\/([^:]+):([^@]+)@(.+)$/;
+  const match = rawUrl.match(EMBEDDED_KEY);
 
-function parseApiUrl(rawUrl: string, rawKey: string): ParsedApiUrl {
-  const APEX_PATTERN = /^https?:\/\/([^:]+):(.+?)@(.+)$/;
-
-  const match = rawUrl.match(APEX_PATTERN);
   if (match) {
-    return { url: `https://${match[3]}`, key: match[2] };
+    const [, protocol, , key, host] = match;
+    return { url: `${protocol}://${host}`, key };
   }
 
-  const keyMatch = rawKey.match(APEX_PATTERN);
-  if (keyMatch) {
-    return { url: keyMatch[1] === "https" ? `https://${keyMatch[3]}` : `http://${keyMatch[3]}`, key: keyMatch[2] };
-  }
-
-  return { url: rawUrl.replace(/\/+$/, ""), key: rawKey };
+  return { url: rawUrl, key: "" };
 }
