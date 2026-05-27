@@ -97,7 +97,7 @@ pipe --list-models --api-key 你的key --api-url https://你的api地址/v1
 cat build.log | pipe -m DeepSeek-V4-Flash "有什么问题？"
 ```
 
-> 支持任意兼容 Anthropic Messages API 的第三方地址。自动从 API `/models` 端点检测可用模型。
+> 支持任意大模型 API（Anthropic、OpenAI 兼容、DeepSeek、智谱等），只要填对应的 URL 和 Key。自动从 API `/models` 端点检测可用模型。
 
 ---
 
