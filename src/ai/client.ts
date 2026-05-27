@@ -15,6 +15,102 @@ export interface AIOptions {
 const DEFAULT_MODEL = "claude-sonnet-4-6-20250514";
 const DEFAULT_MAX_TOKENS = 4096;
 
+/**
+ * Resolve the model to use:
+ * - If user specified --model, use it directly
+ * - Otherwise, try to fetch available models from the API and pick the first one
+ * - If fetch fails (e.g. Anthropic native has no /models endpoint), fall back to default
+ */
+async function resolveModel(
+  endpoint: string,
+  apiKey: string,
+  userModel: string | undefined,
+  signal?: AbortSignal
+): Promise<string> {
+  if (userModel) return userModel;
+
+  // Try to discover models from the API
+  try {
+    const modelsUrl = endpoint.replace(/\/messages\/?$/, "").replace(/\/+$/, "") + "/models";
+    const res = await fetch(modelsUrl, {
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "x-api-key": apiKey,
+      },
+      signal,
+    });
+    if (res.ok) {
+      const data = await res.json() as any;
+      const models: any[] = data?.data || data?.models || [];
+      if (models.length > 0) {
+        // Pick the first available model
+        const model = models[0].id;
+        console.error(`pipe: auto-selected model: ${model} (use --model to specify)`);
+        return model;
+      }
+    }
+  } catch {
+    // ignore — fall back to default
+  }
+
+  console.error(`pipe: using default model: ${DEFAULT_MODEL} (use --model to specify)`);
+  return DEFAULT_MODEL;
+}
+
+/**
+ * List available models from the API
+ */
+export async function listModels(
+  baseUrl: string,
+  apiKey: string,
+  out: Writable = process.stdout
+): Promise<void> {
+  const parsed = parseApiUrl(baseUrl);
+  const key = parsed.key || apiKey;
+  const url = parsed.url;
+
+  if (!key) {
+    out.write("Error: No API key provided. Use --api-key or --api-url.\n");
+    process.exit(1);
+  }
+
+  let endpoint = url.replace(/\/+$/, "");
+  if (!endpoint.endsWith("/messages")) {
+    endpoint += "/messages";
+  }
+  const modelsUrl = endpoint.replace(/\/messages\/?$/, "").replace(/\/+$/, "") + "/models";
+
+  try {
+    const res = await fetch(modelsUrl, {
+      headers: {
+        "Authorization": `Bearer ${key}`,
+        "x-api-key": key,
+      },
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      out.write(`Error: API returned ${res.status}\n${text}\n`);
+      out.write("\n该 API 不支持 /models 接口，请通过 --model 手动指定模型名。\n");
+      process.exit(1);
+    }
+    const data = await res.json() as any;
+    const models: any[] = data?.data || data?.models || [];
+    if (models.length === 0) {
+      out.write("未找到可用模型。该 API 可能不支持 /models 接口。\n");
+      out.write("请通过 --model 手动指定模型名。\n");
+      return;
+    }
+    out.write(`可用模型 (${models.length}):\n\n`);
+    for (const m of models) {
+      out.write(`  ${m.id}\n`);
+    }
+    out.write(`\n使用方法:\n  pipe --model ${models[0].id} "你的问题"\n`);
+  } catch (err: any) {
+    out.write(`Error: ${err.message}\n`);
+    process.exit(1);
+  }
+}
+
 export async function analyzeWithAI(
   stdinContent: string,
   userQuery: string,
@@ -43,6 +139,15 @@ export async function analyzeWithAI(
     process.exit(1);
   }
 
+  // Build final endpoint
+  let endpoint = apiUrl.replace(/\/+$/, "");
+  if (!endpoint.endsWith("/messages")) {
+    endpoint += "/messages";
+  }
+
+  // Resolve model
+  const model = await resolveModel(endpoint, apiKey, options.model, options.signal);
+
   const systemPrompt =
     "You are a terminal assistant. The user has piped command output to you " +
     "and is asking a question about it. Analyze the output and answer concisely. " +
@@ -61,19 +166,12 @@ export async function analyzeWithAI(
     : [{ type: "text" as const, text: userQuery }];
 
   const body = JSON.stringify({
-    model: options.model || DEFAULT_MODEL,
+    model,
     max_tokens: options.maxTokens || DEFAULT_MAX_TOKENS,
     system: systemPrompt,
     messages: [{ role: "user", content: messageContent }],
     stream: true,
   });
-
-  // Build final endpoint: just append /messages to the user's URL
-  // User is responsible for providing the correct base path
-  let endpoint = apiUrl.replace(/\/+$/, "");
-  if (!endpoint.endsWith("/messages")) {
-    endpoint += "/messages";
-  }
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -89,6 +187,10 @@ export async function analyzeWithAI(
   if (!response.ok) {
     const text = await response.text();
     out.write(`Error: API returned ${response.status}\n${text}\n`);
+    // If model not found, suggest --list-models
+    if (text.includes("model_not_found") || text.includes("model")) {
+      out.write(`\n提示: 使用 --list-models 查看可用模型，或用 --model 指定模型名。\n`);
+    }
     process.exit(1);
   }
 
@@ -136,7 +238,6 @@ export async function analyzeWithAI(
  * Also accepts: https://your-host.com/path (no embedded key)
  */
 function parseApiUrl(rawUrl: string): { url: string; key: string } {
-  // Match: protocol://username:password@host
   const EMBEDDED_KEY = /^(https?):\/\/([^:]+):([^@]+)@(.+)$/;
   const match = rawUrl.match(EMBEDDED_KEY);
 

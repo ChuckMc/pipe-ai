@@ -15,43 +15,48 @@ export interface PipeOptions {
   apiKey?: string;
   /** API base URL (supports embedded key: https://key:sk-ant-...@host.com) */
   apiUrl?: string;
+  /** List available models and exit */
+  listModels: boolean;
   /** Show help */
   help: boolean;
 }
 
 const HELP_TEXT = `
-pipe — Pipe terminal output to AI | 终端输出 → AI 分析
+pipe — 终端输出 → AI 分析，一个管道命令问任何问题
 
 USAGE / 用法:
-  <command> | pipe "your question"
-  pipe "your question"              (then paste input / 粘贴内容后按 Ctrl+D)
-  tail -f log | pipe --watch "analyze errors"
+  <command> | pipe "你的问题"
+  pipe "你的问题"                   (粘贴内容后按 Ctrl+D)
+  tail -f log | pipe -w "分析错误"
+
+CONFIG / 配置:
+  三种方式任选（支持自定义 API 地址和模型）:
+
+  方式一：环境变量
+    export ANTHROPIC_API_KEY=你的key
+    export ANTHROPIC_BASE_URL=https://你的api地址
+    cat log | pipe "问题"
+
+  方式二：URL 内嵌 key
+    cat log | pipe --api-url https://key:你的key@你的api地址/v1 "问题"
+
+  方式三：分别指定
+    cat log | pipe --api-key 你的key --api-url https://你的api地址/v1 "问题"
 
 OPTIONS / 选项:
-  --watch, -w         Continuously analyze stdin as new data arrives
-                      持续监听 stdin，实时分析新增内容
-  --model, -m         Claude model to use (default: claude-sonnet-4-6-20250514)
-                      指定 Claude 模型
-  --max-tokens        Max response tokens (default: 4096)
-  --api-key           API key (or set ANTHROPIC_API_KEY env var)
-  --api-url           API base URL (or set ANTHROPIC_BASE_URL env var)
-                      Also supports embedded key:
-                      https://key:sk-ant-xxx@api.anthropic.com/v1
-  --help, -h          Show this help / 显示帮助
+  -w, --watch         持续监听 stdin，实时分析
+  -m, --model         指定模型名（不指定则自动从 API 获取）
+  --max-tokens        最大回复长度（默认 4096）
+  --api-url           API 地址（支持内嵌 key）
+  --api-key           API 密钥
+  --list-models       列出 API 可用的模型
+  -h, --help          显示帮助
 
 EXAMPLES / 示例:
-  # 环境变量（推荐）
-  export ANTHROPIC_API_KEY=你的key
-  export ANTHROPIC_BASE_URL=https://你的api地址
   cat build.log | pipe "构建为什么失败了？"
-
-  # URL 内嵌 key和地址（一行搞定）
-  cat build.log | pipe --api-url https://key:你的key@你的地址/v1 "分析一下"
-
-  # 分别指定 URL 和 key
-  cat build.log | pipe --api-key 你的key --api-url https://你的地址/v1 "有什么问题？"
-
-  # 实时监控
+  cat log | pipe --api-url https://key:xxx@api.example.com/v1 "分析"
+  cat log | pipe -m gpt-4o "用 GPT-4o 分析"
+  pipe --list-models --api-key 你的key --api-url https://你的地址/v1
   tail -f server.log | pipe -w "发现 ERROR 立刻报告"
 `;
 
@@ -60,6 +65,7 @@ export function parseArgs(args: string[]): PipeOptions {
     query: "",
     watch: false,
     maxTokens: 4096,
+    listModels: false,
     help: false,
   };
 
@@ -107,6 +113,10 @@ export function parseArgs(args: string[]): PipeOptions {
           console.error("Error: --api-url requires a value");
           process.exit(1);
         }
+        break;
+      }
+      case "--list-models": {
+        result.listModels = true;
         break;
       }
       default:

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { analyzeWithAI } from "./ai/client.js";
+import { analyzeWithAI, listModels } from "./ai/client.js";
 import { parseArgs, printHelp } from "./cli/flags.js";
 import { startWatching } from "./stream/watcher.js";
 import { stdin as input } from "node:process";
@@ -29,18 +29,26 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  if (!options.query) {
-    console.error("Error: No question provided.\n");
-    printHelp();
-    process.exit(1);
-  }
-
   const aiOptions = {
     model: options.model,
     maxTokens: options.maxTokens,
     apiKey: options.apiKey,
     baseUrl: options.apiUrl,
   };
+
+  // --list-models: show available models and exit (no query required)
+  if (options.listModels) {
+    const baseUrl = options.apiUrl || process.env.ANTHROPIC_BASE_URL || "https://api.anthropic.com";
+    const apiKey = options.apiKey || process.env.ANTHROPIC_API_KEY || "";
+    await listModels(baseUrl, apiKey);
+    process.exit(0);
+  }
+
+  if (!options.query) {
+    console.error("Error: No question provided.\n");
+    printHelp();
+    process.exit(1);
+  }
 
   if (options.watch) {
     console.error("pipe: watching stdin... (Ctrl+C to stop)\n");
