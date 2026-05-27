@@ -23,8 +23,8 @@
 <h1 align="center">pipe</h1>
 
 <p align="center">
-  <strong>终端输出 → AI 分析，一个管道命令问任何问题</strong><br>
-  <sub>Pipe any command output to AI and ask questions in natural language, right in your terminal.</sub>
+  <strong>终端的 AI 副驾驶。一个管道命令，问任何问题。</strong><br>
+  <sub>AI copilot for your terminal. Pipe any command output to AI and ask questions in natural language.</sub>
 </p>
 
 <p align="center">
@@ -38,7 +38,7 @@
 
 ```bash
 cat build.log | pipe "构建为什么失败了？"
-tail -f server.log | pipe -w "发现 ERROR 立刻报告"
+tail -f server.log | pipe -w "发�� ERROR 立刻报告"
 kubectl get pods -A | pipe "哪些 Pod 状态异常？"
 ```
 
@@ -52,7 +52,16 @@ kubectl get pods -A | pipe "哪些 Pod 状态异常？"
 cat log | pipe "why?"
 ```
 
-**一行命令，全程不离开终端。** 任何命令输出丢给 AI，自然语言问问题，实时流式回答。
+**一行命令，全程不离开终端。** 把任何命令输出丢给 AI，用自然语言问问题，实时流式回答。
+
+无论是调试构建、排查服务器、分析日志，还是日常开发——pipe 就是你的终端 AI 副驾驶。
+
+### 适用人群
+
+- **Cursor 用户** — 管道分析构建日志、服务器输出，比 IDE 内更快
+- **DeepSeek / Claude / GPT 用户** — 自由选择模型，不绑定厂商
+- **运维 / SRE / K8s 工程师** — 集群状态、Pod 异常、日志监控，一行搞定
+- **全栈开发者** — 调试、代码审查、数据库查询分析，一切在终端里完成
 
 ---
 
@@ -107,6 +116,8 @@ cat build.log | pipe -m DeepSeek-V4-Flash "有什么问题？"
 | 场景 | 命令 |
 |------|------|
 | 调试构建 | `cat build.log \| pipe "报错原因？怎么修复？"` |
+| Cursor 集成 | `git diff HEAD~1 \| pipe "给这个 PR 写个总结"` |
+| DeepSeek 分析 | `cat data.json \| pipe -m deepseek-chat "分析异常数据"` |
 | 排查服务器 | `curl -s https://api.example.com/health \| pipe "服务正常吗？"` |
 | 日志实时监控 | `tail -f server.log \| pipe -w "只报告 ERROR 和 WARNING"` |
 | 代码审查 | `git diff main...HEAD \| pipe "Review these changes, any bugs?"` |
@@ -146,7 +157,9 @@ cat build.log | pipe -m DeepSeek-V4-Flash "有什么问题？"
 
 - 零配置、无守护进程、不需要 YAML
 - 自动检测用户语言，用中文问就中文答
-- 支持自定义 API 地址（第三方兼容服务、本地部署等）
+- 支持任意大模型 API（Anthropic / OpenAI / DeepSeek / 智谱等），自由切换不绑厂商
+- 支持自定义 API 地址、本地部署模型、第三方代理
+- `--watch` 模式实时监控日志流，像 Cursor 一样即时响应
 
 ---
 
