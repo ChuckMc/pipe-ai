@@ -1,6 +1,6 @@
 {
   "name": "pipeai-cli",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "终端的 AI 副驾驶。一行命令，把终端输出交给 Claude / DeepSeek / GPT 分析。Ai copilot for your terminal — debug, review logs, analyze K8s, all with one pipe command.",
   "keywords": [
     "cli",
